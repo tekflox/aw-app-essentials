@@ -57,6 +57,10 @@ def install_python() -> str:
     return _run_script("install_python.sh")
 
 
+def install_vim() -> str:
+    return _run_script("install_vim.sh")
+
+
 def install_all() -> dict[str, str]:
     return {
         "telnet": install_telnet(),
@@ -65,6 +69,7 @@ def install_all() -> dict[str, str]:
         "nc": install_nc(),
         "perl": install_perl(),
         "python": install_python(),
+        "vim": install_vim(),
     }
 
 

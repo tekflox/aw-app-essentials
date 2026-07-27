@@ -1,0 +1,22 @@
+#!/usr/bin/env bash
+# Installs vim into the workspace via apt — the Debian `vim` package
+# provides both `vim` and `vi` (vi via update-alternatives). Idempotent —
+# safe to re-run (on install, and on every reconcile pass after workspace
+# recreation).
+set -euo pipefail
+
+if command -v vim >/dev/null 2>&1 && command -v vi >/dev/null 2>&1; then
+  echo "vim already installed: $(vim --version | head -1)"
+  exit 0
+fi
+
+if ! command -v apt-get >/dev/null 2>&1; then
+  echo "install_vim.sh: no apt-get on this system — unsupported base image" >&2
+  exit 1
+fi
+
+export DEBIAN_FRONTEND=noninteractive
+apt-get update -qq
+apt-get install -y --no-install-recommends vim
+
+vim --version | head -1

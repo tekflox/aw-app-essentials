@@ -3,8 +3,8 @@
 Second real decoupled app for aw-workspace, per the
 [Decoupled Apps Framework ADR](../../docs/knowledge_base/docs/architecture/decoupled-apps-framework.md)
 (`aw-app.json` manifest schema v1). Installs a set of essential CLI tools
-into the workspace — `telnet`, `ping`, `curl`, `nc`, `perl`, `python` — and
-keeps them present across restarts. Same pattern as
+into the workspace — `telnet`, `ping`, `curl`, `nc`, `perl`, `python`, `vim` —
+and keeps them present across restarts. Same pattern as
 [`aw-app-git`](../aw-app-git), but simpler: no login/settings/secrets, pure
 command install.
 
@@ -25,16 +25,17 @@ where `commands:install` gets enforced by a real `AppContext`.
 - `schemas/aw-app.schema.json` — local structural validator (copy of
   `aw-app-git`'s — same manifest schema, both apps validate against it).
 - `scripts/install_telnet.sh`, `install_ping.sh`, `install_curl.sh`,
-  `install_nc.sh`, `install_perl.sh`, `install_python.sh` — idempotent apt
-  installers (Debian/Ubuntu — the aw-workspace container's actual base
-  image, confirmed via `podman exec aw-remote-host-workspace cat
+  `install_nc.sh`, `install_perl.sh`, `install_python.sh`, `install_vim.sh`
+  — idempotent apt installers (Debian/Ubuntu — the aw-workspace container's
+  actual base image, confirmed via `podman exec aw-remote-host-workspace cat
   /etc/os-release` → Debian 13 trixie, same as `aw-app-git`). Package
   mapping: `telnet`→`telnet`, `ping`→`iputils-ping`, `curl`→`curl`,
   `nc`→`netcat-openbsd`, `perl`→`perl`, `python`→`python3` +
-  `python-is-python3` (so both `python3` and `python` resolve).
-- `scripts/uninstall.sh` — reverses all six (apt purge + autoremove).
+  `python-is-python3` (so both `python3` and `python` resolve), `vim`→`vim`
+  (Debian's `vim` package provides both `vim` and `vi`).
+- `scripts/uninstall.sh` — reverses all seven (apt purge + autoremove).
 - `essentials_app/plugin.py` — `EssentialsAppPlugin(Plugin)` entrypoint;
-  `activate()` installs all six CLIs, `deactivate()` uninstalls.
+  `activate()` installs all seven CLIs, `deactivate()` uninstalls.
 - `essentials_app/installer.py` — runs the install/uninstall scripts as
   subprocesses; used by both the plugin and the standalone test.
 - `essentials_app/_plugin_stub.py` — local stand-in for
@@ -42,7 +43,7 @@ where `commands:install` gets enforced by a real `AppContext`.
   the real module once it does.
 - `tests/validate_manifest.py` — validates `aw-app.json` against the
   schema + checks every `system_clis` installer path exists.
-- `tests/standalone_test.sh` — installs all six tools for real and checks
+- `tests/standalone_test.sh` — installs all seven tools for real and checks
   resolution (`which`) + version output; run inside the aw-workspace
   container.
 
@@ -53,11 +54,11 @@ where `commands:install` gets enforced by a real `AppContext`.
 2. **Real install, standalone, inside the target container**
    (`aw-remote-host-workspace` on macbook-fred, Debian 13 trixie, aarch64):
    ran the exact contents of each `install_*.sh` inside the container as
-   root via `podman exec`. All six installed cleanly; `which telnet ping
-   curl nc perl python python3` all resolved:
+   root via `podman exec`. All seven installed cleanly; `which telnet ping
+   curl nc perl python python3 vim vi` all resolved:
    ```
    /usr/bin/telnet  /usr/bin/ping  /usr/bin/curl  /usr/bin/nc  /usr/bin/perl
-   /usr/local/bin/python  /usr/local/bin/python3
+   /usr/local/bin/python  /usr/local/bin/python3  /usr/bin/vim  /usr/bin/vi
    ```
    Versions:
    ```
@@ -67,8 +68,11 @@ where `commands:install` gets enforced by a real `AppContext`.
    OpenBSD netcat (Debian patchlevel 1.229-1)
    telnet (GNU inetutils) 2.6
    ping from iputils 20240905
+   VIM - Vi IMproved 9.1 (2024 Jan 02, compiled May 23 2025 00:48:59)
    ```
-3. **Idempotency**: re-ran all six `install_*.sh` scripts after install —
+   `vim` package wires `vi` via `update-alternatives` automatically — no
+   separate symlink step needed (unlike `python`'s manual fallback).
+3. **Idempotency**: re-ran all seven `install_*.sh` scripts after install —
    each short-circuits (`"<tool> already installed"`) and exits 0, no
    errors, no redundant apt work.
 
