@@ -1,0 +1,33 @@
+{
+  "manifest_version": 1,
+  "id": "essentials",
+  "name": "Essential CLI Tools",
+  "version": "0.1.0",
+  "description": "Installs a set of essential CLI tools into the workspace (telnet, ping, curl, nc, perl, python) and keeps them present across restarts. No login/settings/secrets — pure command install.",
+  "tier": "inprocess",
+
+  "runtime": {
+    "python": ">=3.11",
+    "entrypoint": "essentials_app.plugin:EssentialsAppPlugin",
+    "pip_requires": []
+  },
+
+  "permissions": [
+    "commands:install",
+    "fs:workspace-data"
+  ],
+
+  "contributes": {
+    "system_clis": [
+      { "name": "telnet", "installer": "scripts/install_telnet.sh", "version": ">=0.17" },
+      { "name": "ping", "installer": "scripts/install_ping.sh", "version": ">=20210202" },
+      { "name": "curl", "installer": "scripts/install_curl.sh", "version": ">=7.0" },
+      { "name": "nc", "installer": "scripts/install_nc.sh", "version": ">=1.10" },
+      { "name": "perl", "installer": "scripts/install_perl.sh", "version": ">=5.0" },
+      { "name": "python", "installer": "scripts/install_python.sh", "version": ">=3.9" }
+    ]
+  },
+
+  "dependencies": {},
+  "migrations": {}
+}
