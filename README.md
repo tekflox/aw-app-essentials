@@ -10,12 +10,11 @@ command install.
 
 ## Status
 
-The framework runtime (Phase 1 — plugin loader, hot routes, `AppContext`)
-isn't built yet. This app is **scaffolded and tested standalone**, ready to
-plug in once Phase 1 ships (`runtime.entrypoint` in `aw-app.json` already
-points at `essentials_app.plugin:EssentialsAppPlugin`). It plugs in for real
-around Phase 4 (commands, services, app DB, config/secrets split) — that's
-where `commands:install` gets enforced by a real `AppContext`.
+**Plugged into the real framework (F4).** `EssentialsAppPlugin.activate(ctx)`
+installs all seven CLIs THROUGH the gated `ctx.commands.install_system_cli(...)`
+facade (capability `commands:install`) — each install is journaled and the
+framework reverts them on uninstall by running `scripts/uninstall.sh`. No raw
+shell in the plugin path anymore.
 
 ## Layout
 
@@ -34,13 +33,12 @@ where `commands:install` gets enforced by a real `AppContext`.
   `python-is-python3` (so both `python3` and `python` resolve), `vim`→`vim`
   (Debian's `vim` package provides both `vim` and `vi`).
 - `scripts/uninstall.sh` — reverses all seven (apt purge + autoremove).
-- `essentials_app/plugin.py` — `EssentialsAppPlugin(Plugin)` entrypoint;
-  `activate()` installs all seven CLIs, `deactivate()` uninstalls.
+- `essentials_app/plugin.py` — `EssentialsAppPlugin` entrypoint;
+  `activate(ctx)` installs all seven CLIs via `ctx.commands`. Revert is driven
+  by the framework's journal reverse-replay (runs `scripts/uninstall.sh`).
 - `essentials_app/installer.py` — runs the install/uninstall scripts as
-  subprocesses; used by both the plugin and the standalone test.
-- `essentials_app/_plugin_stub.py` — local stand-in for
-  `aw_workspace.apps.Plugin` until Phase 1 exists; delete and import from
-  the real module once it does.
+  subprocesses; used by the standalone test (the framework path runs the
+  scripts through `ctx.commands` directly).
 - `tests/validate_manifest.py` — validates `aw-app.json` against the
   schema + checks every `system_clis` installer path exists.
 - `tests/standalone_test.sh` — installs all seven tools for real and checks
@@ -80,6 +78,5 @@ where `commands:install` gets enforced by a real `AppContext`.
 
 - No install into the production workspace — Frederico installs manually
   after reviewing this.
-- No real `AppContext`/`Plugin` runtime — `_plugin_stub.py` is a shim.
 - No frontend/settings UI — this app has none by design (pure command
   install, no config to expose).
