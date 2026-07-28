@@ -3,7 +3,7 @@
   "id": "essentials",
   "name": "Essential CLI Tools",
   "version": "0.1.0",
-  "description": "Installs a set of essential CLI tools into the workspace (telnet, ping, curl, nc, perl, python, vim) and keeps them present across restarts. No login/settings/secrets — pure command install.",
+  "description": "Installs a set of essential CLI tools into the workspace (telnet, ping, curl, nc, perl, python, vim, docker) and keeps them present across restarts. No login/settings/secrets — pure command install.",
   "tier": "inprocess",
   "publisher": "TekFlox",
   "resource_estimate": { "cpu": "low", "memory": "-", "disk": "~80 MB" },
@@ -27,7 +27,8 @@
       { "name": "nc", "installer": "scripts/install_nc.sh", "version": ">=1.10" },
       { "name": "perl", "installer": "scripts/install_perl.sh", "version": ">=5.0" },
       { "name": "python", "installer": "scripts/install_python.sh", "version": ">=3.9" },
-      { "name": "vim", "installer": "scripts/install_vim.sh", "version": ">=8.0" }
+      { "name": "vim", "installer": "scripts/install_vim.sh", "version": ">=8.0" },
+      { "name": "docker", "installer": "scripts/install_docker.sh", "version": ">=24.0" }
     ]
   },
 

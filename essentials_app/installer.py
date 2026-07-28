@@ -1,6 +1,6 @@
 """
 Install/uninstall logic for the essential system CLIs (telnet, ping, curl,
-nc, perl, python). Invoked by EssentialsAppPlugin.activate()/deactivate()
+nc, perl, python, vim, docker). Invoked by EssentialsAppPlugin.activate()/deactivate()
 through the framework, and directly by tests/standalone_test.sh for
 out-of-framework testing.
 """
@@ -61,6 +61,10 @@ def install_vim() -> str:
     return _run_script("install_vim.sh")
 
 
+def install_docker() -> str:
+    return _run_script("install_docker.sh")
+
+
 def install_all() -> dict[str, str]:
     return {
         "telnet": install_telnet(),
@@ -70,6 +74,7 @@ def install_all() -> dict[str, str]:
         "perl": install_perl(),
         "python": install_python(),
         "vim": install_vim(),
+        "docker": install_docker(),
     }
 
 

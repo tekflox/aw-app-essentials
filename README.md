@@ -3,8 +3,8 @@
 Second real decoupled app for aw-workspace, per the
 [Decoupled Apps Framework ADR](../../docs/knowledge_base/docs/architecture/decoupled-apps-framework.md)
 (`aw-app.json` manifest schema v1). Installs a set of essential CLI tools
-into the workspace — `telnet`, `ping`, `curl`, `nc`, `perl`, `python`, `vim` —
-and keeps them present across restarts. Same pattern as
+into the workspace — `telnet`, `ping`, `curl`, `nc`, `perl`, `python`, `vim`,
+`docker` (CLI + Compose plugin) — and keeps them present across restarts. Same pattern as
 [`aw-app-git`](../aw-app-git), but simpler: no login/settings/secrets, pure
 command install.
 
@@ -24,24 +24,29 @@ shell in the plugin path anymore.
 - `schemas/aw-app.schema.json` — local structural validator (copy of
   `aw-app-git`'s — same manifest schema, both apps validate against it).
 - `scripts/install_telnet.sh`, `install_ping.sh`, `install_curl.sh`,
-  `install_nc.sh`, `install_perl.sh`, `install_python.sh`, `install_vim.sh`
+  `install_nc.sh`, `install_perl.sh`, `install_python.sh`, `install_vim.sh`,
+  `install_docker.sh`
   — idempotent apt installers (Debian/Ubuntu — the aw-workspace container's
   actual base image, confirmed via `podman exec aw-remote-host-workspace cat
   /etc/os-release` → Debian 13 trixie, same as `aw-app-git`). Package
   mapping: `telnet`→`telnet`, `ping`→`iputils-ping`, `curl`→`curl`,
   `nc`→`netcat-openbsd`, `perl`→`perl`, `python`→`python3` +
   `python-is-python3` (so both `python3` and `python` resolve), `vim`→`vim`
-  (Debian's `vim` package provides both `vim` and `vi`).
-- `scripts/uninstall.sh` — reverses all seven (apt purge + autoremove).
+  (Debian's `vim` package provides both `vim` and `vi`), `docker`→
+  `docker-ce-cli` + `docker-compose-plugin` (adds Docker's official apt repo
+  first if not already configured; installs client tooling only — talks to
+  whatever daemon is reachable, e.g. a host-mounted `/var/run/docker.sock`,
+  does not install/start a daemon itself).
+- `scripts/uninstall.sh` — reverses all eight (apt purge + autoremove).
 - `essentials_app/plugin.py` — `EssentialsAppPlugin` entrypoint;
-  `activate(ctx)` installs all seven CLIs via `ctx.commands`. Revert is driven
+  `activate(ctx)` installs all eight CLIs via `ctx.commands`. Revert is driven
   by the framework's journal reverse-replay (runs `scripts/uninstall.sh`).
 - `essentials_app/installer.py` — runs the install/uninstall scripts as
   subprocesses; used by the standalone test (the framework path runs the
   scripts through `ctx.commands` directly).
 - `tests/validate_manifest.py` — validates `aw-app.json` against the
   schema + checks every `system_clis` installer path exists.
-- `tests/standalone_test.sh` — installs all seven tools for real and checks
+- `tests/standalone_test.sh` — installs all eight tools for real and checks
   resolution (`which`) + version output; run inside the aw-workspace
   container.
 
@@ -73,6 +78,15 @@ shell in the plugin path anymore.
 3. **Idempotency**: re-ran all seven `install_*.sh` scripts after install —
    each short-circuits (`"<tool> already installed"`) and exits 0, no
    errors, no redundant apt work.
+4. **`install_docker.sh` (2026-07-28)**: added after the first six were
+   verified above; not yet run end-to-end inside a target container (no
+   root apt access from the sandbox to test the repo-add + install path).
+   Confirmed by inspection that `aw-sandbox` itself already has `docker-ce-cli`
+   installed and a mounted `/var/run/docker.sock`, but no
+   `docker-compose-plugin` and no candidate for it until Docker's own apt
+   repo (`/etc/apt/sources.list.d/docker.list`) is present — exactly the gap
+   this script closes. Needs a real run (as root, in a fresh target
+   container) before calling it verified like the other seven.
 
 ## NOT done here (explicitly out of scope)
 
