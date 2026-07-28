@@ -4,8 +4,26 @@
 # Idempotent — safe to re-run (on install, and on every reconcile pass
 # after workspace recreation). Does NOT install/start a Docker daemon —
 # this only gives you the client tools; they talk to whatever daemon is
-# reachable (host-mounted /var/run/docker.sock, DOCKER_HOST, etc.).
+# reachable.
+#
+# BYOD/podman note: aw-remote-host's workspace bootstrap (bootstrap/workspace/
+# install.sh) mounts the HOST's rootless podman socket into this container at
+# /run/podman.sock, not /var/run/docker.sock — podman speaks the Docker API,
+# but the docker CLI only looks at /var/run/docker.sock by default. If that's
+# the only socket present, symlink it into place so `docker`/`docker compose`
+# work with zero extra config (see the wiring block below).
 set -euo pipefail
+
+_wire_podman_socket() {
+  local docker_sock=/var/run/docker.sock
+  local podman_sock=/run/podman.sock
+  if [ -S "$podman_sock" ] && [ ! -S "$docker_sock" ]; then
+    ln -sf "$podman_sock" "$docker_sock"
+    echo "install_docker.sh: no docker daemon socket found — symlinked $docker_sock -> $podman_sock (rootless podman, Docker-API compatible)"
+  fi
+}
+
+_wire_podman_socket
 
 if command -v docker >/dev/null 2>&1 && docker compose version >/dev/null 2>&1; then
   echo "docker + docker compose already installed: $(docker --version), $(docker compose version --short 2>/dev/null || docker compose version | head -1)"
@@ -36,5 +54,13 @@ fi
 apt-get update -qq
 apt-get install -y --no-install-recommends docker-ce-cli docker-compose-plugin
 
+# The socket may not have been mounted yet on first-ever activate() (container
+# creation order) — re-check now that packages are in place.
+_wire_podman_socket
+
 docker --version
-docker compose version
+if [ -S /var/run/docker.sock ] || [ -n "${DOCKER_HOST:-}" ]; then
+  docker compose version
+else
+  echo "install_docker.sh: no docker/podman socket reachable yet — compose version check skipped, docker compose is installed and will work once one is mounted"
+fi

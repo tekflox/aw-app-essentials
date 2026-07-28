@@ -88,6 +88,20 @@ shell in the plugin path anymore.
    this script closes. Needs a real run (as root, in a fresh target
    container) before calling it verified like the other seven.
 
+   **BYOD/podman gotcha**: the actual target for this app — the
+   `aw-workspace` container on machines like macbook-fred — has no Docker
+   daemon at all. `bootstrap/workspace/install.sh` (in `aw-remote-host`)
+   mounts the **host's rootless podman socket** at `/run/podman.sock`
+   instead (`AW_CONTAINER_SOCKET`, used by `src/apps/containers.py`'s Tier-2
+   supervisor) — podman speaks the Docker API, but the `docker` CLI only
+   looks at `/var/run/docker.sock` by default. The script now symlinks
+   `/var/run/docker.sock -> /run/podman.sock` when the podman socket exists
+   and no real docker socket is present, both before and after the apt
+   install (the mount may not exist yet on a container's very first boot).
+   With that in place `docker ps` / `docker compose up` talk straight to
+   podman with **zero extra config** — not yet verified live on
+   macbook-fred, only by reading the mount + socket-compat code paths.
+
 ## NOT done here (explicitly out of scope)
 
 - No install into the production workspace — Frederico installs manually
