@@ -8,6 +8,13 @@ system CLI THROUGH the gated ``ctx.commands`` facade (capability
 them on uninstall by replaying the journal (running scripts/uninstall.sh once).
 The install scripts are idempotent, so the reconciler safely re-runs activate on
 every boot / workspace recreation.
+
+Consolidates the former aw-app-essentials/aw-app-node/aw-app-terraform/
+aw-app-brew apps into one — same activate loop, just a longer system_clis
+list. The two config knobs (terraform_version, node_version) are passed to
+their respective install scripts via env vars, same pattern the standalone
+apps used (the framework doesn't pass args to installer scripts, only the
+app's own package_dir/cwd).
 """
 
 from __future__ import annotations
@@ -23,6 +30,11 @@ class EssentialsAppPlugin:
     async def activate(self, ctx) -> None:
         with open(os.path.join(ctx.package_dir, "aw-app.json"), encoding="utf-8") as f:
             manifest = json.load(f)
+
+        config = getattr(ctx, "config", {}) or {}
+        os.environ["AW_APP_TERRAFORM_VERSION"] = str(config.get("terraform_version") or "1.9.8")
+        os.environ["AW_APP_NODE_VERSION"] = str(config.get("node_version") or "lts")
+
         clis = manifest.get("contributes", {}).get("system_clis", [])
         installed = []
         for cli in clis:

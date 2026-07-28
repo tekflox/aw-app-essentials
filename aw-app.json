@@ -2,15 +2,11 @@
   "manifest_version": 1,
   "id": "essentials",
   "name": "Essential CLI Tools",
-  "version": "0.2.0",
-  "description": "Installs a set of essential CLI tools into the workspace (telnet, ping, curl, nc, perl, python, vim, docker) and keeps them present across restarts. No login/settings/secrets \u2014 pure command install.",
+  "version": "0.3.0",
+  "description": "Installs a broad set of workspace CLI tooling and keeps it present across restarts: core networking/utilities (telnet, ping, curl, nc, perl, python, vim, docker), a Node.js dev toolkit (nvm, node, npm, npx, yarn, pnpm), Terraform, and Homebrew (Linuxbrew). Consolidates what used to be four separate apps (essentials, node, terraform, brew) into one, since they're all the same kind of thing: pure command installs, no login/settings/secrets beyond two version knobs.",
   "tier": "inprocess",
   "publisher": "TekFlox",
-  "resource_estimate": {
-    "cpu": "low",
-    "memory": "low",
-    "disk": "low"
-  },
+  "resource_estimate": { "cpu": "low", "memory": "low", "disk": "medium" },
   "runtime": {
     "python": ">=3.11",
     "entrypoint": "essentials_app.plugin:EssentialsAppPlugin",
@@ -18,51 +14,44 @@
   },
   "permissions": [
     "commands:install",
-    "fs:workspace-data"
+    "fs:workspace-data",
+    "net:outbound"
   ],
   "contributes": {
     "system_clis": [
-      {
-        "name": "telnet",
-        "installer": "scripts/install_telnet.sh",
-        "version": ">=0.17"
-      },
-      {
-        "name": "ping",
-        "installer": "scripts/install_ping.sh",
-        "version": ">=20210202"
-      },
-      {
-        "name": "curl",
-        "installer": "scripts/install_curl.sh",
-        "version": ">=7.0"
-      },
-      {
-        "name": "nc",
-        "installer": "scripts/install_nc.sh",
-        "version": ">=1.10"
-      },
-      {
-        "name": "perl",
-        "installer": "scripts/install_perl.sh",
-        "version": ">=5.0"
-      },
-      {
-        "name": "python",
-        "installer": "scripts/install_python.sh",
-        "version": ">=3.9"
-      },
-      {
-        "name": "vim",
-        "installer": "scripts/install_vim.sh",
-        "version": ">=8.0"
-      },
-      {
-        "name": "docker",
-        "installer": "scripts/install_docker.sh",
-        "version": ">=24.0"
-      }
+      { "name": "telnet", "installer": "scripts/install_telnet.sh", "version": ">=0.17" },
+      { "name": "ping", "installer": "scripts/install_ping.sh", "version": ">=20210202" },
+      { "name": "curl", "installer": "scripts/install_curl.sh", "version": ">=7.0" },
+      { "name": "nc", "installer": "scripts/install_nc.sh", "version": ">=1.10" },
+      { "name": "perl", "installer": "scripts/install_perl.sh", "version": ">=5.0" },
+      { "name": "python", "installer": "scripts/install_python.sh", "version": ">=3.9" },
+      { "name": "vim", "installer": "scripts/install_vim.sh", "version": ">=8.0" },
+      { "name": "docker", "installer": "scripts/install_docker.sh", "version": ">=24.0" },
+      { "name": "terraform", "installer": "scripts/install_terraform.sh" },
+      { "name": "nvm", "installer": "scripts/install_nvm.sh", "version": ">=0.40" },
+      { "name": "node", "installer": "scripts/install_node.sh", "version": ">=18" },
+      { "name": "npm", "installer": "scripts/install_node.sh", "version": ">=9" },
+      { "name": "npx", "installer": "scripts/install_node.sh", "version": ">=9" },
+      { "name": "yarn", "installer": "scripts/install_yarn.sh", "version": ">=1.22" },
+      { "name": "pnpm", "installer": "scripts/install_pnpm.sh", "version": ">=9" },
+      { "name": "brew", "installer": "scripts/install_brew.sh" }
     ]
+  },
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "terraform_version": {
+        "type": "string",
+        "default": "1.9.8",
+        "description": "Terraform version to install — a specific version like \"1.9.8\" (default), or \"latest\" to resolve the newest stable release from releases.hashicorp.com."
+      },
+      "node_version": {
+        "type": "string",
+        "default": "lts",
+        "description": "Node.js version to install via nvm — \"lts\" (default) for the current LTS line, or an explicit version like \"22\" or \"20\"."
+      }
+    },
+    "required": []
   },
   "dependencies": {},
   "migrations": {}
