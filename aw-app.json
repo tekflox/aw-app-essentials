@@ -6,7 +6,7 @@
   "description": "Installs a set of essential CLI tools into the workspace (telnet, ping, curl, nc, perl, python, vim) and keeps them present across restarts. No login/settings/secrets — pure command install.",
   "tier": "inprocess",
   "publisher": "TekFlox",
-  "resource_estimate": { "cpu": "low", "memory": "low", "disk": "low" },
+  "resource_estimate": { "cpu": "low", "memory": "-", "disk": "~80 MB" },
 
   "runtime": {
     "python": ">=3.11",
