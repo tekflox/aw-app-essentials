@@ -3,7 +3,7 @@
   "id": "essentials",
   "name": "Essential CLI Tools",
   "version": "0.6.0",
-  "description": "Installs a broad set of workspace CLI tooling and keeps it present across restarts: core networking/utilities (telnet, ping, curl, nc, perl, python, vim, docker), a Node.js dev toolkit (nvm, node, npm, npx, yarn, pnpm), Terraform, and Homebrew (Linuxbrew). Consolidates what used to be four separate apps (essentials, node, terraform, brew) into one, since they're all the same kind of thing: pure command installs, no login/settings/secrets beyond two version knobs.",
+  "description": "Installs a broad set of workspace CLI tooling and keeps it present across restarts: core networking/utilities (telnet, ping, curl, nc, perl, python, vim, docker), a Node.js dev toolkit (nvm, node, npm, npx, yarn, pnpm), Terraform, and Homebrew (Linuxbrew). Consolidates what used to be four separate apps (essentials, node, terraform, brew) into one, since they're all the same kind of thing: pure command installs, no login/settings/secrets. No config for now.",
   "tier": "inprocess",
   "publisher": "TekFlox",
   "resource_estimate": {
@@ -103,22 +103,7 @@
       }
     ]
   },
-  "config_schema": {
-    "type": "object",
-    "properties": {
-      "terraform_version": {
-        "type": "string",
-        "default": "1.9.8",
-        "description": "Terraform version to install \u2014 a specific version like \"1.9.8\" (default), or \"latest\" to resolve the newest stable release from releases.hashicorp.com."
-      },
-      "node_version": {
-        "type": "string",
-        "default": "lts",
-        "description": "Node.js version to install via nvm \u2014 \"lts\" (default) for the current LTS line, or an explicit version like \"22\" or \"20\"."
-      }
-    },
-    "required": []
-  },
+  "config_schema": {},
   "dependencies": {},
   "migrations": {}
 }
