@@ -4,7 +4,7 @@ Decoupled app for aw-workspace, per the
 [Decoupled Apps Framework ADR](../../docs/knowledge_base/docs/architecture/decoupled-apps-framework.md)
 (`aw-app.json` manifest schema v1). Installs a broad set of workspace CLI
 tooling and keeps it present across restarts — no login/settings/secrets
-beyond two version knobs. Same pattern as [`aw-app-git`](../aw-app-git), but
+beyond version knobs. Same pattern as [`aw-app-git`](../aw-app-git), but
 simpler: pure command install, nothing to configure or authenticate.
 
 **2026-07-28: consolidated.** This repo used to be four separate apps —
@@ -22,6 +22,8 @@ other three repos are deleted; their functionality lives here unchanged.
   Ubuntu, the aw-workspace container's actual base image).
 - **Terraform**: single Go binary, version pinned via the `terraform_version`
   config knob (default `1.9.8`, or `"latest"`).
+- **Go**: official Linux tarball into a per-user directory, version selected
+  via the `go_version` config knob (default `"latest"`).
 - **Node.js dev toolkit**: `nvm`, `node`, `npm`, `npx`, `yarn`, `pnpm` —
   version selected via the `node_version` config knob (default `lts`).
 - **Homebrew** (Linuxbrew, non-root git-clone method — the official
@@ -29,15 +31,15 @@ other three repos are deleted; their functionality lives here unchanged.
 
 ## Layout
 
-- `aw-app.json` — the manifest (id `essentials`, tier `inprocess`), 16
+- `aw-app.json` — the manifest (id `essentials`, tier `inprocess`), 18
   `contributes.system_clis` entries + `config_schema` (`terraform_version`,
-  `node_version`). No `routes`/`windows`/`nav`/`settings_panels` — this app
+  `node_version`, `go_version`). No `routes`/`windows`/`nav`/`settings_panels` — this app
   contributes CLIs only.
 - `schemas/aw-app.schema.json` — local structural validator (same manifest
   schema every `aw-app-*` repo validates against).
-- `scripts/install_*.sh` — one idempotent installer per CLI (16 scripts).
-- `scripts/uninstall.sh` — reverses all 16 (apt purge/autoremove + binary/
-  dir removal for terraform/node/nvm/yarn/pnpm/brew).
+- `scripts/install_*.sh` — one idempotent installer per CLI/toolchain.
+- `scripts/uninstall.sh` — reverses all 18 (apt purge/autoremove + binary/
+  dir removal for terraform/go/node/nvm/yarn/pnpm/brew).
 - `essentials_app/plugin.py` — `EssentialsAppPlugin` entrypoint;
   `activate(ctx)` sets the two version env vars then installs every CLI via
   `ctx.commands`. Revert is driven by the framework's journal reverse-replay

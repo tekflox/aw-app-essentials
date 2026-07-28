@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Reverses every install_*.sh in this repo — apt-installed networking/utils
 # (telnet/ping/curl/nc/perl/python/vim/docker), Terraform, the Node.js
-# toolkit (nvm/node/npm/npx/yarn/pnpm), and Homebrew. Called on app uninstall
+# toolkit (nvm/node/npm/npx/yarn/pnpm), Go, and Homebrew. Called on app uninstall
 # (journal replay per the ADR's Decision 7 — this script IS the revert action
 # for every commands:install journal entry from this app).
 set -euo pipefail
@@ -15,6 +15,10 @@ AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
 
 # Terraform
 rm -f "$AW_BIN_DIR/terraform"
+
+# Go
+rm -f "$AW_BIN_DIR"/{go,gofmt}
+rm -rf "${AW_GO_ROOT:-$HOME/.go}"
 
 # Node.js toolkit (nvm/node/npm/npx/yarn/pnpm)
 rm -f "$AW_BIN_DIR"/{node,npm,npx,yarn,yarnpkg,pnpm,pnpx}

@@ -14,6 +14,7 @@ cd "$(dirname "$0")/.."
 
 export AW_APP_TERRAFORM_VERSION="${AW_APP_TERRAFORM_VERSION:-1.9.8}"
 export AW_APP_NODE_VERSION="${AW_APP_NODE_VERSION:-lts}"
+export AW_APP_GO_VERSION="${AW_APP_GO_VERSION:-latest}"
 AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
 
 echo "== apt-based tools: telnet/ping/curl/nc/perl/python/vim/docker =="
@@ -24,6 +25,9 @@ done
 
 echo "== Terraform (terraform_version=$AW_APP_TERRAFORM_VERSION) =="
 bash scripts/install_terraform.sh
+
+echo "== Go (go_version=$AW_APP_GO_VERSION) =="
+bash scripts/install_go.sh
 
 echo "== Node.js toolkit (node_version=$AW_APP_NODE_VERSION): nvm/node/yarn/pnpm =="
 bash scripts/install_nvm.sh
@@ -36,7 +40,7 @@ bash scripts/install_brew.sh
 
 echo "== resolution check (bin dir: $AW_BIN_DIR) =="
 export PATH="$AW_BIN_DIR:$PATH"
-for bin in telnet ping curl nc perl python python3 vim vi docker terraform node npm npx yarn pnpm brew; do
+for bin in telnet ping curl nc perl python python3 vim vi docker terraform go gofmt node npm npx yarn pnpm brew; do
   which "$bin"
 done
 # shellcheck disable=SC1090
@@ -51,6 +55,8 @@ vim --version | head -1
 docker --version
 docker compose version
 terraform version
+go version
+gofmt -w /dev/null 2>/dev/null || true
 node --version
 npm --version
 npx --version
@@ -61,8 +67,8 @@ brew --version
 
 echo "== idempotency re-run (each install script must be safe to run twice) =="
 for s in install_telnet install_ping install_curl install_nc install_perl install_python install_vim install_docker \
-         install_terraform install_nvm install_node install_yarn install_pnpm install_brew; do
+         install_terraform install_go install_nvm install_node install_yarn install_pnpm install_brew; do
   bash "scripts/${s}.sh"
 done
 
-echo "OK: all 16 CLIs installed and resolve"
+echo "OK: all 18 CLIs installed and resolve"

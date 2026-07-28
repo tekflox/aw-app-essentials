@@ -2,8 +2,8 @@
   "manifest_version": 1,
   "id": "essentials",
   "name": "Essential CLI Tools",
-  "version": "0.6.1",
-  "description": "Installs a broad set of workspace CLI tooling and keeps it present across restarts: core networking/utilities (telnet, ping, curl, nc, perl, python, vim, docker), a Node.js dev toolkit (nvm, node, npm, npx, yarn, pnpm), Terraform, and Homebrew (Linuxbrew). Consolidates what used to be four separate apps (essentials, node, terraform, brew) into one, since they're all the same kind of thing: pure command installs, no login/settings/secrets. No config for now.",
+  "version": "0.7.0",
+  "description": "Installs a broad set of workspace CLI tooling and keeps it present across restarts: core networking/utilities (telnet, ping, curl, nc, perl, python, vim, docker), Go, a Node.js dev toolkit (nvm, node, npm, npx, yarn, pnpm), Terraform, and Homebrew (Linuxbrew). Consolidates what used to be four separate apps (essentials, node, terraform, brew) into one, since they're all the same kind of thing: pure command installs, no login/settings/secrets.",
   "tier": "inprocess",
   "publisher": "TekFlox",
   "resource_estimate": {
@@ -68,6 +68,14 @@
         "installer": "scripts/install_terraform.sh"
       },
       {
+        "name": "go",
+        "installer": "scripts/install_go.sh"
+      },
+      {
+        "name": "gofmt",
+        "installer": "scripts/install_go.sh"
+      },
+      {
         "name": "nvm",
         "installer": "scripts/install_nvm.sh",
         "version": ">=0.40"
@@ -103,7 +111,26 @@
       }
     ]
   },
-  "config_schema": {},
+  "config_schema": {
+    "type": "object",
+    "properties": {
+      "terraform_version": {
+        "type": "string",
+        "default": "1.9.8",
+        "description": "Terraform version to install, or \"latest\"."
+      },
+      "node_version": {
+        "type": "string",
+        "default": "lts",
+        "description": "Node.js version for nvm to install, or \"lts\"."
+      },
+      "go_version": {
+        "type": "string",
+        "default": "latest",
+        "description": "Go version to install, or \"latest\"."
+      }
+    }
+  },
   "dependencies": {},
   "migrations": {}
 }

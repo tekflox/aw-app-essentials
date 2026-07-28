@@ -3,7 +3,7 @@
 no real network/download/apt involved, so this is safe to run in CI on a
 plain GitHub-hosted runner. Covers every CLI this app installs (merged from
 the former aw-app-essentials/aw-app-node/aw-app-terraform/aw-app-brew repos):
-core networking/utilities, Terraform, the Node.js toolkit, and Homebrew.
+core networking/utilities, Go, Terraform, the Node.js toolkit, and Homebrew.
 
 For each, asserts the install function invokes bash on the EXACT expected
 script path under SCRIPTS_DIR (i.e. installed from the correct path within
@@ -36,7 +36,7 @@ def _script_path(call_args) -> str:
 
 
 class SimpleCliInstallersTest(unittest.TestCase):
-    """The 8 no-config-knob CLIs — each just runs its own script."""
+    """No-config-knob CLIs — each just runs its own script."""
 
     CASES = [
         (installer.install_telnet, "install_telnet.sh"),
@@ -92,6 +92,28 @@ class TerraformInstallerTest(unittest.TestCase):
         self.assertEqual(mock_run.call_args.kwargs["env"]["AW_APP_TERRAFORM_VERSION"], "1.9.8")
 
 
+class GoInstallerTest(unittest.TestCase):
+    @patch("essentials_app.installer.subprocess.run")
+    def test_install_go_runs_script_with_version_env(self, mock_run):
+        mock_run.return_value = _ok("go version go1.23.4 linux/amd64")
+
+        out = installer.install_go("1.23.4")
+
+        self.assertEqual(out, "go version go1.23.4 linux/amd64")
+        self.assertEqual(
+            _script_path(mock_run.call_args),
+            str(installer.SCRIPTS_DIR / "install_go.sh"),
+        )
+        self.assertEqual(mock_run.call_args.kwargs["env"]["AW_APP_GO_VERSION"], "1.23.4")
+
+    @patch("essentials_app.installer.subprocess.run")
+    def test_install_gofmt_also_runs_install_go_script(self, mock_run):
+        mock_run.return_value = _ok()
+        installer.install_gofmt("latest")
+        self.assertEqual(_script_path(mock_run.call_args), str(installer.SCRIPTS_DIR / "install_go.sh"))
+        self.assertEqual(mock_run.call_args.kwargs["env"]["AW_APP_GO_VERSION"], "latest")
+
+
 class NodeToolkitInstallerTest(unittest.TestCase):
     @patch("essentials_app.installer.subprocess.run")
     def test_install_node_runs_install_node_script_with_version_env(self, mock_run):
@@ -124,7 +146,7 @@ class AggregateInstallTest(unittest.TestCase):
         self.assertEqual(
             set(result.keys()),
             {"telnet", "ping", "curl", "nc", "perl", "python", "vim", "docker",
-             "terraform", "nvm", "node", "npm", "npx", "yarn", "pnpm", "brew"},
+             "go", "gofmt", "terraform", "nvm", "node", "npm", "npx", "yarn", "pnpm", "brew"},
         )
 
     @patch("essentials_app.installer.subprocess.run")

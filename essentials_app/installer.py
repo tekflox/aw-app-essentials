@@ -1,6 +1,6 @@
 """
 Install/uninstall logic for every CLI this app installs: core networking/
-utilities (telnet, ping, curl, nc, perl, python, vim, docker), Terraform, the
+utilities (telnet, ping, curl, nc, perl, python, vim, docker), Go, Terraform, the
 Node.js dev toolkit (nvm, node, npm, npx, yarn, pnpm), and Homebrew.
 Invoked directly by tests/test_installer.py (subprocess mocked) and
 tests/standalone_test.sh (real, out-of-framework). EssentialsAppPlugin's
@@ -80,6 +80,16 @@ def install_docker() -> str:
     return _run_script("install_docker.sh")
 
 
+# ---- language/dev toolchains ------------------------------------------------
+
+def install_go(go_version: str = "latest") -> str:
+    return _run_script("install_go.sh", env_overrides={"AW_APP_GO_VERSION": go_version})
+
+
+def install_gofmt(go_version: str = "latest") -> str:
+    return _run_script("install_go.sh", env_overrides={"AW_APP_GO_VERSION": go_version})
+
+
 # ---- Terraform --------------------------------------------------------------
 
 def install_terraform(terraform_version: str = "1.9.8") -> str:
@@ -120,7 +130,7 @@ def install_brew() -> str:
 
 # ---- aggregate ---------------------------------------------------------------
 
-def install_all(terraform_version: str = "1.9.8", node_version: str = "lts") -> dict[str, str]:
+def install_all(terraform_version: str = "1.9.8", node_version: str = "lts", go_version: str = "latest") -> dict[str, str]:
     return {
         "telnet": install_telnet(),
         "ping": install_ping(),
@@ -130,6 +140,8 @@ def install_all(terraform_version: str = "1.9.8", node_version: str = "lts") -> 
         "python": install_python(),
         "vim": install_vim(),
         "docker": install_docker(),
+        "go": install_go(go_version),
+        "gofmt": install_gofmt(go_version),
         "terraform": install_terraform(terraform_version),
         "nvm": install_nvm(),
         "node": install_node(node_version),
