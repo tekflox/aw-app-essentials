@@ -1,11 +1,9 @@
 # aw-app-essentials
 
-Decoupled app for aw-workspace, per the
-[Decoupled Apps Framework ADR](../../docs/knowledge_base/docs/architecture/decoupled-apps-framework.md)
-(`aw-app.json` manifest schema v1). Installs a broad set of workspace CLI
-tooling and keeps it present across restarts — no login/settings/secrets
-beyond version knobs. Same pattern as [`aw-app-git`](../aw-app-git), but
-simpler: pure command install, nothing to configure or authenticate.
+AW workspace app that installs a broad set of CLI tooling and keeps it
+present across restarts. It has no login, settings, or secrets beyond version
+knobs. It follows the same command-install shape as [`aw-app-git`](../aw-app-git),
+but is simpler: pure command install, nothing to authenticate.
 
 **2026-07-28: consolidated.** This repo used to be four separate apps —
 `aw-app-essentials` (telnet/ping/curl/nc/perl/python/vim/docker),
