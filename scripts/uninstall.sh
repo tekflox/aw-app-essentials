@@ -6,12 +6,19 @@
 # for every commands:install journal entry from this app).
 set -euo pipefail
 
+# apt-get and removing symlinks from /usr/local/bin both need root — the
+# container's default user (ubuntu) is non-root, so re-exec ourselves under
+# sudo. -E keeps $HOME etc. pointed at ubuntu's, not root's.
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 export DEBIAN_FRONTEND=noninteractive
 apt-get remove -y --purge telnet iputils-ping curl netcat-openbsd perl python-is-python3 python3 vim docker-ce-cli docker-compose-plugin || true
 apt-get autoremove -y || true
 apt-get update -qq || true
 
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
+AW_BIN_DIR="/usr/local/bin"
 
 # Terraform
 rm -f "$AW_BIN_DIR/terraform"

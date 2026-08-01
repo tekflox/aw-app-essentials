@@ -15,7 +15,7 @@ cd "$(dirname "$0")/.."
 export AW_APP_TERRAFORM_VERSION="${AW_APP_TERRAFORM_VERSION:-1.9.8}"
 export AW_APP_NODE_VERSION="${AW_APP_NODE_VERSION:-lts}"
 export AW_APP_GO_VERSION="${AW_APP_GO_VERSION:-latest}"
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
+AW_BIN_DIR="/usr/local/bin"
 
 echo "== apt-based tools: telnet/ping/curl/nc/perl/python/vim/docker =="
 for s in install_telnet install_ping install_curl install_nc install_perl install_python install_vim install_docker; do

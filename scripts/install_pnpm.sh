@@ -6,8 +6,7 @@
 set -euo pipefail
 
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
-mkdir -p "$AW_BIN_DIR"
+AW_BIN_DIR="/usr/local/bin"
 
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   # shellcheck disable=SC1091
@@ -29,12 +28,12 @@ fi
 
 # See install_yarn.sh — corepack's own realpath() check on a stale/dangling
 # shim throws ENOENT instead of overwriting it.
-rm -f "$AW_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpx"
+sudo rm -f "$AW_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpx"
 
 corepack enable
 corepack prepare pnpm@stable --activate
 
-ln -sf "$NODE_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpm"
-[ -e "$NODE_BIN_DIR/pnpx" ] && ln -sf "$NODE_BIN_DIR/pnpx" "$AW_BIN_DIR/pnpx"
+sudo ln -sf "$NODE_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpm"
+[ -e "$NODE_BIN_DIR/pnpx" ] && sudo ln -sf "$NODE_BIN_DIR/pnpx" "$AW_BIN_DIR/pnpx"
 
 "$AW_BIN_DIR/pnpm" --version

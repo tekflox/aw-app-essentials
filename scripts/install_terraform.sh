@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 # Installs Terraform (single Go binary) from the official HashiCorp release
-# zip, non-root, into the workspace's persistent bin dir (same tree the F4
-# command-shim facade uses — always on PATH). Idempotent — safe to re-run
-# (on install, and on every reconcile pass after workspace recreation).
+# zip and copies it into /usr/local/bin (regular system PATH — needs sudo
+# since the container's default user is non-root). Idempotent — safe to
+# re-run (on install, and on every reconcile pass after workspace recreation).
 # Version selectable via the AW_APP_TERRAFORM_VERSION env var (default
 # "1.9.8", or "latest" to resolve the newest stable release from
 # releases.hashicorp.com/terraform/index.json), set by terraform_app/plugin.py
@@ -14,8 +14,7 @@
 set -euo pipefail
 
 TF_VERSION="${AW_APP_TERRAFORM_VERSION:-1.9.8}"
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
-mkdir -p "$AW_BIN_DIR"
+AW_BIN_DIR="/usr/local/bin"
 
 case "$(uname -m)" in
   x86_64|amd64) ARCH="amd64" ;;
@@ -51,7 +50,7 @@ URL="https://releases.hashicorp.com/terraform/${TF_VERSION}/${ZIP_NAME}"
 curl -fsSL -o "$WORKDIR/$ZIP_NAME" "$URL"
 unzip -oq "$WORKDIR/$ZIP_NAME" -d "$WORKDIR"
 
-cp "$WORKDIR/terraform" "$AW_BIN_DIR/terraform"
-chmod 0755 "$AW_BIN_DIR/terraform"
+sudo cp "$WORKDIR/terraform" "$AW_BIN_DIR/terraform"
+sudo chmod 0755 "$AW_BIN_DIR/terraform"
 
 "$AW_BIN_DIR/terraform" version

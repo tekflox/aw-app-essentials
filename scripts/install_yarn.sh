@@ -6,8 +6,7 @@
 set -euo pipefail
 
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
-mkdir -p "$AW_BIN_DIR"
+AW_BIN_DIR="/usr/local/bin"
 
 if [ -s "$NVM_DIR/nvm.sh" ]; then
   # shellcheck disable=SC1091
@@ -37,12 +36,12 @@ fi
 # overwriting it (confirmed 2026-07-28, after a broken symlink was left
 # behind by the nvm-extraction bug this app's install_node.sh works around).
 # Clear the slate first so there's nothing stale for it to trip over.
-rm -f "$AW_BIN_DIR/yarn" "$AW_BIN_DIR/yarnpkg"
+sudo rm -f "$AW_BIN_DIR/yarn" "$AW_BIN_DIR/yarnpkg"
 
 corepack enable
 corepack prepare yarn@stable --activate
 
-ln -sf "$NODE_BIN_DIR/yarn" "$AW_BIN_DIR/yarn"
-[ -e "$NODE_BIN_DIR/yarnpkg" ] && ln -sf "$NODE_BIN_DIR/yarnpkg" "$AW_BIN_DIR/yarnpkg"
+sudo ln -sf "$NODE_BIN_DIR/yarn" "$AW_BIN_DIR/yarn"
+[ -e "$NODE_BIN_DIR/yarnpkg" ] && sudo ln -sf "$NODE_BIN_DIR/yarnpkg" "$AW_BIN_DIR/yarnpkg"
 
 "$AW_BIN_DIR/yarn" --version

@@ -14,6 +14,13 @@
 # work with zero extra config (see the wiring block below).
 set -euo pipefail
 
+# The container's default user (ubuntu) is non-root — the podman-socket
+# symlink below and apt-get both need root, so re-exec ourselves under
+# sudo. -E keeps $HOME etc. pointed at ubuntu's, not root's.
+if [ "$(id -u)" -ne 0 ]; then
+  exec sudo -E bash "$0" "$@"
+fi
+
 _wire_podman_socket() {
   local docker_sock=/var/run/docker.sock
   local podman_sock=/run/podman.sock

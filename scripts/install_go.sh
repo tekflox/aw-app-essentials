@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 # Installs Go from the official go.dev Linux tarball into a per-user directory
-# and symlinks the `go`/`gofmt` binaries into the workspace's persistent bin dir.
+# and symlinks the `go`/`gofmt` binaries into /usr/local/bin (regular system
+# PATH — needs sudo since the container's default user is non-root).
 # Idempotent — safe to re-run. Version selectable via AW_APP_GO_VERSION
 # (default "latest", resolved from https://go.dev/VERSION?m=text).
 set -euo pipefail
 
 GO_VERSION="${AW_APP_GO_VERSION:-latest}"
 GO_ROOT="${AW_GO_ROOT:-$HOME/.go}"
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
-mkdir -p "$AW_BIN_DIR"
+AW_BIN_DIR="/usr/local/bin"
 
 case "$(uname -m)" in
   x86_64|amd64) ARCH="amd64" ;;
@@ -46,8 +46,8 @@ mkdir -p "$(dirname "$GO_ROOT")"
 tar -C "$WORKDIR" -xzf "$WORKDIR/$TARBALL"
 mv "$WORKDIR/go" "$GO_ROOT"
 
-ln -sf "$GO_ROOT/bin/go" "$AW_BIN_DIR/go"
-ln -sf "$GO_ROOT/bin/gofmt" "$AW_BIN_DIR/gofmt"
+sudo ln -sf "$GO_ROOT/bin/go" "$AW_BIN_DIR/go"
+sudo ln -sf "$GO_ROOT/bin/gofmt" "$AW_BIN_DIR/gofmt"
 
 "$AW_BIN_DIR/go" version
 "$AW_BIN_DIR/gofmt" -w /dev/null 2>/dev/null || true

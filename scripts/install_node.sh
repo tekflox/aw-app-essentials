@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 # Installs Node.js via nvm (per-user, non-root) and symlinks node/npm/npx
-# into the workspace's persistent bin dir (same tree the F4 command-shim
-# facade uses — always on PATH) so they resolve without sourcing nvm.sh in
-# every shell. Idempotent — safe to re-run (on install, and on every
-# reconcile pass after workspace recreation). Version selectable via the
-# AW_APP_NODE_VERSION env var (default "lts"), set by node_app/plugin.py
+# into /usr/local/bin (regular system PATH — needs sudo since the
+# container's default user is non-root) so they resolve without sourcing
+# nvm.sh in every shell. Idempotent — safe to re-run (on install, and on
+# every reconcile pass after workspace recreation). Version selectable via
+# the AW_APP_NODE_VERSION env var (default "lts"), set by node_app/plugin.py
 # from the app's config_schema.node_version.
 #
 # Shared by the "node", "npm", and "npx" contributes.system_clis entries —
@@ -15,8 +15,7 @@ set -euo pipefail
 
 NODE_VERSION="${AW_APP_NODE_VERSION:-lts}"
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-AW_BIN_DIR="${AW_WORKSPACE_HOME:-$HOME/.aw-workspace}/bin"
-mkdir -p "$AW_BIN_DIR"
+AW_BIN_DIR="/usr/local/bin"
 
 if [ ! -s "$NVM_DIR/nvm.sh" ]; then
   echo "install_node.sh: nvm not found at $NVM_DIR — run install_nvm.sh first" >&2
@@ -59,19 +58,19 @@ NPM_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npm-cli.js"
 NPX_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npx-cli.js"
 COREPACK_JS="$NODE_VERSION_DIR/lib/node_modules/corepack/dist/corepack.js"
 
-ln -sf "$NODE_BIN_DIR/node" "$AW_BIN_DIR/node"
+sudo ln -sf "$NODE_BIN_DIR/node" "$AW_BIN_DIR/node"
 if [ -f "$NPM_CLI" ]; then
-  ln -sf "$NPM_CLI" "$AW_BIN_DIR/npm"
+  sudo ln -sf "$NPM_CLI" "$AW_BIN_DIR/npm"
 else
-  ln -sf "$NODE_BIN_DIR/npm" "$AW_BIN_DIR/npm"
+  sudo ln -sf "$NODE_BIN_DIR/npm" "$AW_BIN_DIR/npm"
 fi
 if [ -f "$NPX_CLI" ]; then
-  ln -sf "$NPX_CLI" "$AW_BIN_DIR/npx"
+  sudo ln -sf "$NPX_CLI" "$AW_BIN_DIR/npx"
 else
-  ln -sf "$NODE_BIN_DIR/npx" "$AW_BIN_DIR/npx"
+  sudo ln -sf "$NODE_BIN_DIR/npx" "$AW_BIN_DIR/npx"
 fi
 if [ -f "$COREPACK_JS" ]; then
-  ln -sf "$COREPACK_JS" "$AW_BIN_DIR/corepack"
+  sudo ln -sf "$COREPACK_JS" "$AW_BIN_DIR/corepack"
 fi
 
 "$AW_BIN_DIR/node" --version

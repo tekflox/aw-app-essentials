@@ -15,17 +15,26 @@ other three repos are deleted; their functionality lives here unchanged.
 
 ## What it installs
 
+Every resolvable binary lands in `/usr/local/bin` — the regular system
+`PATH`, no workspace-specific `PATH` entry needed. The container's default
+user (`ubuntu`) is non-root, so every script that writes there (or calls
+`apt-get`) re-execs itself under `sudo` first.
+
 - **Core networking/utilities**: `telnet`, `ping`, `curl`, `nc`, `perl`,
   `python`, `vim`, `docker` (CLI + Compose plugin) — apt installs (Debian/
-  Ubuntu, the aw-workspace container's actual base image).
+  Ubuntu, the aw-workspace container's actual base image), land in `/usr/bin`.
 - **Terraform**: single Go binary, version pinned via the `terraform_version`
-  config knob (default `1.9.8`, or `"latest"`).
+  config knob (default `1.9.8`, or `"latest"`), copied into `/usr/local/bin`.
 - **Go**: official Linux tarball into a per-user directory, version selected
-  via the `go_version` config knob (default `"latest"`).
+  via the `go_version` config knob (default `"latest"`); `go`/`gofmt`
+  symlinked into `/usr/local/bin`.
 - **Node.js dev toolkit**: `nvm`, `node`, `npm`, `npx`, `yarn`, `pnpm` —
-  version selected via the `node_version` config knob (default `lts`).
-- **Homebrew** (Linuxbrew, non-root git-clone method — the official
-  installer requires sudo/root, unavailable in this container).
+  version selected via the `node_version` config knob (default `lts`); nvm
+  itself stays per-user (`$HOME/.nvm`), the resolved binaries are symlinked
+  into `/usr/local/bin`.
+- **Homebrew** (Linuxbrew, non-root git-clone method into `$HOME/.homebrew` —
+  the official installer hardcodes `/home/linuxbrew`); the resolved `brew`
+  binary is symlinked into `/usr/local/bin`.
 
 ## Layout
 
