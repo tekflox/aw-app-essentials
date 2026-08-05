@@ -1,79 +1,22 @@
-# aw-app-essentials
+# Essential CLI Tools
 
-AW workspace app that installs a broad set of CLI tooling and keeps it
-present across restarts. It has no login, settings, or secrets beyond version
-knobs. It follows the same command-install shape as [`aw-app-git`](../aw-app-git),
-but is simpler: pure command install, nothing to authenticate.
+Essential CLI Tools installs a practical base toolkit in an AW Workspace. It keeps common command-line utilities and development tools available without rebuilding the workspace.
 
-**2026-07-28: consolidated.** This repo used to be four separate apps —
-`aw-app-essentials` (telnet/ping/curl/nc/perl/python/vim/docker),
-`aw-app-node` (nvm/node/npm/npx/yarn/pnpm), `aw-app-terraform` (terraform),
-and `aw-app-brew` (Homebrew) — all the exact same shape (a Tier-1 plugin
-whose `activate()` loops over `contributes.system_clis` and installs each
-through `ctx.commands`), so they're now one app with a longer CLI list. The
-other three repos are deleted; their functionality lives here unchanged.
+## What It Does
 
-## What it installs
+- Installs everyday terminal tools such as curl, ping, netcat, Python, Perl, Vim, and Docker.
+- Adds development runtimes and package managers such as Node.js, npm, npx, yarn, pnpm, Go, Terraform, and Homebrew.
+- Keeps those tools present across workspace restarts.
+- Provides version settings for tools that support configurable versions.
 
-Every resolvable binary lands in `/usr/local/bin` — the regular system
-`PATH`, no workspace-specific `PATH` entry needed. The container's default
-user (`ubuntu`) is non-root, so every script that writes there (or calls
-`apt-get`) re-execs itself under `sudo` first.
+## Why Use It
 
-- **Core networking/utilities**: `telnet`, `ping`, `curl`, `nc`, `perl`,
-  `python`, `vim`, `docker` (CLI + Compose plugin) — apt installs (Debian/
-  Ubuntu, the aw-workspace container's actual base image), land in `/usr/bin`.
-- **Terraform**: single Go binary, version pinned via the `terraform_version`
-  config knob (default `1.9.8`, or `"latest"`), copied into `/usr/local/bin`.
-- **Go**: official Linux tarball into a per-user directory, version selected
-  via the `go_version` config knob (default `"latest"`); `go`/`gofmt`
-  symlinked into `/usr/local/bin`.
-- **Node.js dev toolkit**: `nvm`, `node`, `npm`, `npx`, `yarn`, `pnpm` —
-  version selected via the `node_version` config knob (default `lts`); nvm
-  itself stays per-user (`$HOME/.nvm`), the resolved binaries are symlinked
-  into `/usr/local/bin`.
-- **Homebrew** (Linuxbrew, non-root git-clone method into `$HOME/.homebrew` —
-  the official installer hardcodes `/home/linuxbrew`); the resolved `brew`
-  binary is symlinked into `/usr/local/bin`.
+Use this app when a workspace needs a reliable baseline of CLI tools for development, automation, troubleshooting, and deployment work. It is the app to install before other tools that depend on Node.js, package managers, Docker, Terraform, or common networking utilities.
 
-## Layout
+## How To Use It
 
-- `aw-app.json` — the manifest (id `essentials`, tier `inprocess`), 18
-  `contributes.system_clis` entries + `config_schema` (`terraform_version`,
-  `node_version`, `go_version`). No `routes`/`windows`/`nav`/`settings_panels` — this app
-  contributes CLIs only.
-- `schemas/aw-app.schema.json` — local structural validator (same manifest
-  schema every `aw-app-*` repo validates against).
-- `scripts/install_*.sh` — one idempotent installer per CLI/toolchain.
-- `scripts/uninstall.sh` — reverses all 18 (apt purge/autoremove + binary/
-  dir removal for terraform/go/node/nvm/yarn/pnpm/brew).
-- `essentials_app/plugin.py` — `EssentialsAppPlugin` entrypoint;
-  `activate(ctx)` sets the two version env vars then installs every CLI via
-  `ctx.commands`. Revert is driven by the framework's journal reverse-replay
-  (runs `scripts/uninstall.sh` once).
-- `essentials_app/installer.py` — the same install logic as a plain
-  subprocess-calling module (no framework `ctx` needed) — used by
-  `tests/test_installer.py` and `tests/standalone_test.sh`.
-- `tests/test_installer.py` — unit tests (subprocess mocked, no real
-  installs) verifying every install function invokes the correct script
-  **path** under `SCRIPTS_DIR`, and that the two version knobs land in the
-  right env var. Runs in CI on every push (see below).
-- `tests/validate_manifest.py` — validates `aw-app.json` against the
-  schema + checks every `system_clis` installer path exists on disk.
-- `tests/standalone_test.sh` — installs all 16 tools for real and checks
-  resolution (`which`) + version output; run inside the aw-workspace
-  container (not part of CI — needs apt/root + real network).
+Install the app and let it prepare the tools. After installation, open a workspace terminal and use the commands normally. If a configurable tool version is needed, set it in the app settings before reinstalling or refreshing the tool.
 
-## CI/CD
+## What It Delivers
 
-`tests/validate_manifest.py` and `tests/test_installer.py` both run in
-`tekflox/aw-marketplace`'s shared `app-release.yml` reusable workflow on
-every push to `master` — a failure stops the release **before** any version
-bump, tag, or marketplace catalog sync happens.
-
-## NOT done here (explicitly out of scope)
-
-- No install into the production workspace by this repo's own CI — install/
-  update happens from the AW Marketplace panel, after review.
-- No frontend/settings UI — this app has none by design (pure command
-  install, no config to expose beyond the two version fields).
+The app gives AW Workspace a strong command-line foundation. Users and agents can work with common development and operations tools without manual setup each time.
