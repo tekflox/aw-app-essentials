@@ -31,7 +31,11 @@ fi
 sudo rm -f "$AW_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpx"
 
 corepack enable
-corepack prepare pnpm@stable --activate
+# `latest`, not `stable`: pnpm's npm dist-tags no longer carry a `stable` tag,
+# so corepack fails the whole install with "Usage Error: Tag not found
+# (stable)". Yarn still publishes `stable` (see install_yarn.sh) — this is a
+# per-package fact, not a corepack-wide one, so don't "unify" the two.
+corepack prepare pnpm@latest --activate
 
 sudo ln -sf "$NODE_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpm"
 [ -e "$NODE_BIN_DIR/pnpx" ] && sudo ln -sf "$NODE_BIN_DIR/pnpx" "$AW_BIN_DIR/pnpx"

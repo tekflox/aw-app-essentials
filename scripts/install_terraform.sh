@@ -23,7 +23,22 @@ case "$(uname -m)" in
 esac
 
 command -v curl >/dev/null 2>&1 || { echo "install_terraform.sh: curl not found on this system — unsupported base image" >&2; exit 1; }
-command -v unzip >/dev/null 2>&1 || { echo "install_terraform.sh: unzip not found on this system — unsupported base image" >&2; exit 1; }
+
+# Unzipping without depending on `unzip`. The workspace image doesn't ship it
+# (this script used to hard-fail "unsupported base image" on every boot), but
+# it is always a Python image, and python3's zipfile module is in the stdlib —
+# so this needs nothing installed. Real `unzip` is still preferred when
+# present, since a user's own base image may not have python3.
+extract_zip() {
+  if command -v unzip >/dev/null 2>&1; then
+    unzip -oq "$1" -d "$2"
+  elif command -v python3 >/dev/null 2>&1; then
+    python3 -m zipfile -e "$1" "$2"
+  else
+    echo "install_terraform.sh: need unzip or python3 to extract the release archive" >&2
+    return 1
+  fi
+}
 
 if [ "$TF_VERSION" = "latest" ]; then
   TF_VERSION="$(curl -fsSL https://releases.hashicorp.com/terraform/index.json \
@@ -48,7 +63,8 @@ ZIP_NAME="terraform_${TF_VERSION}_linux_${ARCH}.zip"
 URL="https://releases.hashicorp.com/terraform/${TF_VERSION}/${ZIP_NAME}"
 
 curl -fsSL -o "$WORKDIR/$ZIP_NAME" "$URL"
-unzip -oq "$WORKDIR/$ZIP_NAME" -d "$WORKDIR"
+extract_zip "$WORKDIR/$ZIP_NAME" "$WORKDIR"
+chmod +x "$WORKDIR/terraform"
 
 sudo cp "$WORKDIR/terraform" "$AW_BIN_DIR/terraform"
 sudo chmod 0755 "$AW_BIN_DIR/terraform"
