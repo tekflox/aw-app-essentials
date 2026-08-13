@@ -39,8 +39,14 @@ class EssentialsAppPlugin:
         clis = manifest.get("contributes", {}).get("system_clis", [])
         installed = []
         for cli in clis:
+            # `verify` decides what "installed" MEANS for each CLI: a command
+            # that has to succeed, rather than the name merely being on PATH.
+            # Most answer the default `<name> --version`; the manifest spells
+            # out the ones that don't (ping/nc/go/gofmt), and nvm, which is a
+            # shell function and never on PATH at all.
             ctx.commands.install_system_cli(
-                cli["name"], cli["installer"], uninstall="scripts/uninstall.sh"
+                cli["name"], cli["installer"], uninstall="scripts/uninstall.sh",
+                verify=cli.get("verify"),
             )
             installed.append(cli["name"])
         log.info("aw-app-essentials activated: installed %s", installed)

@@ -31,7 +31,8 @@
       {
         "name": "ping",
         "installer": "scripts/install_ping.sh",
-        "version": ">=20210202"
+        "version": ">=20210202",
+        "verify": "ping -V"
       },
       {
         "name": "curl",
@@ -41,7 +42,8 @@
       {
         "name": "nc",
         "installer": "scripts/install_nc.sh",
-        "version": ">=1.10"
+        "version": ">=1.10",
+        "verify": "nc -h"
       },
       {
         "name": "perl",
@@ -69,16 +71,19 @@
       },
       {
         "name": "go",
-        "installer": "scripts/install_go.sh"
+        "installer": "scripts/install_go.sh",
+        "verify": "go version"
       },
       {
         "name": "gofmt",
-        "installer": "scripts/install_go.sh"
+        "installer": "scripts/install_go.sh",
+        "verify": "gofmt -h"
       },
       {
         "name": "nvm",
         "installer": "scripts/install_nvm.sh",
-        "version": ">=0.40"
+        "version": ">=0.40",
+        "verify": "test -s \"${NVM_DIR:-$HOME/.nvm}/nvm.sh\""
       },
       {
         "name": "node",
