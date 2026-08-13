@@ -31,6 +31,19 @@ fi
 eval "$("$BREW_DIR/bin/brew" shellenv)"
 sudo ln -sf "$BREW_DIR/bin/brew" "$AW_BIN_DIR/brew"
 
+# Homebrew reaches into /usr/local even when its prefix is elsewhere — for
+# its var dir, and for linking completions/docs/manpages — and the container's
+# default user owns none of it. `brew update` died with "mkdir: cannot create
+# directory '/usr/local/var': Permission denied" on every heal pass, which
+# failed the whole essentials install and took the app down with it
+# (2026-08-13). Create what it wants, owned by us, so it can proceed.
+for d in /usr/local/var /usr/local/etc /usr/local/etc/bash_completion.d \
+         /usr/local/share /usr/local/share/man/man1 /usr/local/share/doc \
+         /usr/local/lib; do
+  [ -d "$d" ] || sudo mkdir -p "$d"
+  [ -w "$d" ] || sudo chown "$(id -u):$(id -g)" "$d"
+done
+
 brew update --force --quiet
 
 "$AW_BIN_DIR/brew" --version
