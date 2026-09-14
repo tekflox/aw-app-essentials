@@ -41,7 +41,18 @@ sudo rm -f "$AW_BIN_DIR/yarn" "$AW_BIN_DIR/yarnpkg"
 # Scoped to yarn only — bare `corepack enable` writes shims for every
 # manager it knows (incl. pnpm/pnpx) into AW_BIN_DIR, which install_pnpm.sh
 # owns and this script has no sudo pre-clean for, so that write EACCESes.
-corepack enable yarn
+#
+# --install-directory is required even scoped: corepack's `enable` picks
+# its shim-install dir from dirname(process.argv[1]) — the path it was
+# INVOKED as, not the realpath of what that resolves to. `corepack` here is
+# `/usr/local/bin/corepack`, a symlink install_node.sh points at the real
+# corepack.js to work around a separate nvm bug (bin/corepack itself comes
+# out 0-byte/unreadable) — so argv[1]'s dirname is /usr/local/bin, which is
+# root-owned, and `corepack enable` never runs under sudo (only this
+# script's own rm/ln lines do). Force it to write into NODE_BIN_DIR, which
+# the unprivileged user already owns, then let the sudo ln below publish it
+# into AW_BIN_DIR the same way node/npm/npx already are.
+corepack enable yarn --install-directory "$NODE_BIN_DIR"
 corepack prepare yarn@stable --activate
 
 sudo ln -sf "$NODE_BIN_DIR/yarn" "$AW_BIN_DIR/yarn"
