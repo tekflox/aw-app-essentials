@@ -38,7 +38,10 @@ fi
 # Clear the slate first so there's nothing stale for it to trip over.
 sudo rm -f "$AW_BIN_DIR/yarn" "$AW_BIN_DIR/yarnpkg"
 
-corepack enable
+# Scoped to yarn only — bare `corepack enable` writes shims for every
+# manager it knows (incl. pnpm/pnpx) into AW_BIN_DIR, which install_pnpm.sh
+# owns and this script has no sudo pre-clean for, so that write EACCESes.
+corepack enable yarn
 corepack prepare yarn@stable --activate
 
 sudo ln -sf "$NODE_BIN_DIR/yarn" "$AW_BIN_DIR/yarn"

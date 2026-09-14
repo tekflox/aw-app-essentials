@@ -30,7 +30,10 @@ fi
 # shim throws ENOENT instead of overwriting it.
 sudo rm -f "$AW_BIN_DIR/pnpm" "$AW_BIN_DIR/pnpx"
 
-corepack enable
+# Scoped to pnpm only — bare `corepack enable` writes shims for every
+# manager it knows (incl. yarn/yarnpkg) into AW_BIN_DIR, which install_yarn.sh
+# owns and this script has no sudo pre-clean for, so that write EACCESes.
+corepack enable pnpm
 # `latest`, not `stable`: pnpm's npm dist-tags no longer carry a `stable` tag,
 # so corepack fails the whole install with "Usage Error: Tag not found
 # (stable)". Yarn still publishes `stable` (see install_yarn.sh) — this is a
