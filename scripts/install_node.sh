@@ -24,6 +24,23 @@ fi
 # shellcheck disable=SC1091
 . "$NVM_DIR/nvm.sh"
 
+# On a $NVM_DIR that sits on a virtiofs mount (Apple Virtualization.framework
+# virtio-fs, used by podman machines on the `applehv` provider — confirmed
+# live on Mac.Home, 2026-09-27), nvm's tar extraction of the node tarball
+# reproducibly hard-fails on exactly bin/npm, bin/npx and bin/corepack with
+# "Permission denied" — every other entry in the same tar stream (all of
+# lib/node_modules/**, every other bin/* file) extracts fine in the same
+# pass. Internally, `nvm install` calls `nvm_extract_tarball`, whose
+# `command tar ... || return 1` returns cleanly, but ITS caller
+# (`nvm_install_binary_extract`) invokes that as an untested bare statement
+# — so under this script's own `set -e`, that nonzero return kills
+# install_node.sh outright via errexit, before nvm ever reaches its own
+# `mkdir -p "$VERSION_PATH" && mv ...` recovery step that would otherwise
+# move the (mostly good) extraction into place. Disable errexit around the
+# install itself so that recovery step gets to run, and judge success by
+# whether a real node binary landed — not by `nvm install`'s own exit code,
+# which is unreliable here even when everything this script needs is fine.
+set +e
 if [ "$NODE_VERSION" = "lts" ]; then
   nvm install --lts >/dev/null
   nvm alias default 'lts/*' >/dev/null
@@ -32,12 +49,54 @@ else
   nvm alias default "$NODE_VERSION" >/dev/null
 fi
 nvm use default >/dev/null
+NODE_BIN_DIR="$(dirname "$(nvm which default 2>/dev/null)")"
+set -e
 
-NODE_BIN_DIR="$(dirname "$(nvm which default)")"
+if [ ! -x "$NODE_BIN_DIR/node" ]; then
+  echo "install_node.sh: nvm did not produce a usable node binary for $NODE_VERSION under $NVM_DIR" >&2
+  exit 1
+fi
 NODE_VERSION_DIR="$(dirname "$NODE_BIN_DIR")"
 
-# nvm's own bin/npm + bin/npx (and bin/corepack) come out as 0-byte,
-# unreadable-even-to-root files on at least one target host (a Fedora
+NPM_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npm-cli.js"
+NPX_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npx-cli.js"
+COREPACK_JS="$NODE_VERSION_DIR/lib/node_modules/corepack/dist/corepack.js"
+
+# Removing one of the corrupted bin/{npm,npx,corepack} entries above is not
+# reliably one-shot on the same mount: `rm -f` can report success (exit 0,
+# no stderr) while the entry is still visibly present on the very next
+# access, then clear on a retry with no other change — a readdir/stat cache
+# desync, not an rm bug (confirmed live on Mac.Home, 2026-09-27). Retry a
+# bounded number of times and fail loudly rather than silently leaving a
+# broken entry behind or looping forever.
+nvm_bypass_relink() {
+  local target="$1" link="$2" attempt
+  for attempt in 1 2 3 4 5; do
+    rm -f "$link" 2>/dev/null || true
+    [ -e "$link" ] || break
+    sleep 0.2
+  done
+  if [ -e "$link" ]; then
+    echo "install_node.sh: $link is stuck and could not be removed after 5 attempts" >&2
+    exit 1
+  fi
+  if [ -f "$target" ]; then
+    ln -sf "$target" "$link"
+  fi
+}
+
+# Apply the same npm/npx/corepack bypass used for /usr/local/bin below (real
+# JS entrypoints, never nvm's own tar-extracted bin/* copies) INSIDE nvm's
+# own version bin dir too, unconditionally — via ln -sf, never tar — so this
+# specific extraction failure can never leave $NVM_DIR itself with broken or
+# missing npm/npx/corepack, regardless of whether `nvm install` above fully
+# succeeded or partially failed on just these 3 files.
+nvm_bypass_relink "$NPM_CLI" "$NODE_BIN_DIR/npm"
+nvm_bypass_relink "$NPX_CLI" "$NODE_BIN_DIR/npx"
+nvm_bypass_relink "$COREPACK_JS" "$NODE_BIN_DIR/corepack"
+
+# nvm's own bin/npm + bin/npx (and bin/corepack) also come out as 0-byte,
+# unreadable-even-to-root files on at least one OTHER target host (a Fedora
 # CoreOS / rootless-podman ARM64 VM, confirmed 2026-07-28) — every single
 # time nvm (re)installs this node version, despite the downloaded tarball's
 # checksum matching the official release (the corruption is in nvm's own
@@ -54,10 +113,6 @@ NODE_VERSION_DIR="$(dirname "$NODE_BIN_DIR")"
 # unaffected part of the tree. Symlinking AW_BIN_DIR straight to those
 # (skipping bin/npm|npx as a middleman) works whether or not nvm's own
 # copies are broken, so just always do it this way.
-NPM_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npm-cli.js"
-NPX_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npx-cli.js"
-COREPACK_JS="$NODE_VERSION_DIR/lib/node_modules/corepack/dist/corepack.js"
-
 sudo ln -sf "$NODE_BIN_DIR/node" "$AW_BIN_DIR/node"
 if [ -f "$NPM_CLI" ]; then
   sudo ln -sf "$NPM_CLI" "$AW_BIN_DIR/npm"
