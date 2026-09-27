@@ -70,22 +70,27 @@ COREPACK_JS="$NODE_VERSION_DIR/lib/node_modules/corepack/dist/corepack.js"
 #
 # A first cut of this function retried the `rm` but trusted `[ -e "$link" ]`
 # to decide cleanup had worked before doing a single, unretried `ln -sf`.
-# That's the same desync fooling itself: live re-reproduction on Mac.Home
-# (2026-09-27, via `podman exec` into aw-remote-host-workspace) showed
-# `stat`/`[ -e ]` on the corrupted path returning ENOENT while `readdir`
-# still listed the dirent — so `-e` can report "already gone" while the
-# entry is still physically there, the loop exits believing cleanup
-# succeeded, and the final `ln -sf` then hits the still-corrupted path and
-# fails outright. The same live test found `ln -sf` itself failing
-# identically for 15+ continuous seconds before eventually clearing.
+# A second cut retried `ln -sf` itself instead of trusting `-e` — better, but
+# still assumed the desync always clears given enough wall-clock (60 attempts
+# x 0.5s = 30s), then `exit 1`'d the whole script if it didn't. Re-verifying
+# THAT cut live against a fresh extraction of the same cached tarball on the
+# same Mac.Home mount (2026-09-27) found a corrupted entry that was STILL
+# unrecoverable after 240 attempts / 122+ continuous seconds — not a slower
+# version of the same race, but a case where `rm`, `ln -sf`, `mv -f`, and even
+# a raw `os.rename()` syscall all kept failing EACCES indefinitely. That
+# matches the OTHER, permanently-broken-inode corruption already documented
+# below (Fedora CoreOS, 2026-07-28) — no retry budget, however large, is a
+# fix for that.
 #
-# Fix: never trust a presence check here. Retry the operation that actually
-# has to succeed (`ln -sf`) directly, inside the loop, and judge success by
-# ITS OWN exit code — not by whether `-e` thinks the old entry is gone.
-# Budget is time, not a guess: ~30s per link (60 attempts x 0.5s), comfortably
-# past the 15s+ stuck window observed live. Attempt count/interval are
-# overridable via env vars so tests can exercise the retry/give-up paths
-# without actually waiting 30s.
+# The actual fix: this function's result was never load-bearing to begin
+# with. Its only callers (below) are trying to heal nvm's OWN internal
+# bin/{npm,npx,corepack} — a nicety, not a requirement — while the script's
+# real deliverable ($AW_BIN_DIR/{npm,npx,corepack}, further down) already
+# symlinks straight to the same real JS entrypoints ($NPM_CLI/$NPX_CLI/
+# $COREPACK_JS) independently of whether nvm's own copies ever get fixed
+# (live-verified: that link succeeds even while bin/npm stays permanently
+# EACCES). So a stuck link here must never abort the script — give the
+# transient case a bounded chance to self-heal, then warn and move on.
 nvm_bypass_relink() {
   local target="$1" link="$2" attempt
   local max_attempts="${NVM_BYPASS_RELINK_ATTEMPTS:-60}"
@@ -100,19 +105,22 @@ nvm_bypass_relink() {
     fi
     sleep "$retry_sleep"
   done
-  echo "install_node.sh: $link is stuck and could not be relinked after $max_attempts attempts" >&2
-  exit 1
+  echo "install_node.sh: $link is stuck and could not be relinked after $max_attempts attempts — continuing, \$AW_BIN_DIR bypass below does not depend on it" >&2
+  return 1
 }
 
 # Apply the same npm/npx/corepack bypass used for /usr/local/bin below (real
 # JS entrypoints, never nvm's own tar-extracted bin/* copies) INSIDE nvm's
-# own version bin dir too, unconditionally — via ln -sf, never tar — so this
-# specific extraction failure can never leave $NVM_DIR itself with broken or
-# missing npm/npx/corepack, regardless of whether `nvm install` above fully
-# succeeded or partially failed on just these 3 files.
-nvm_bypass_relink "$NPM_CLI" "$NODE_BIN_DIR/npm"
-nvm_bypass_relink "$NPX_CLI" "$NODE_BIN_DIR/npx"
-nvm_bypass_relink "$COREPACK_JS" "$NODE_BIN_DIR/corepack"
+# own version bin dir too, best-effort — via ln -sf, never tar — so this
+# specific extraction failure LEAVES $NVM_DIR itself with broken or missing
+# npm/npx/corepack as rarely as possible, regardless of whether `nvm install`
+# above fully succeeded or partially failed on just these 3 files. Not fatal
+# if it never clears (`|| true`) — the $AW_BIN_DIR bypass a few lines down
+# uses the same real JS entrypoints directly and does not depend on this
+# succeeding.
+nvm_bypass_relink "$NPM_CLI" "$NODE_BIN_DIR/npm" || true
+nvm_bypass_relink "$NPX_CLI" "$NODE_BIN_DIR/npx" || true
+nvm_bypass_relink "$COREPACK_JS" "$NODE_BIN_DIR/corepack" || true
 
 # nvm's own bin/npm + bin/npx (and bin/corepack) also come out as 0-byte,
 # unreadable-even-to-root files on at least one OTHER target host (a Fedora
