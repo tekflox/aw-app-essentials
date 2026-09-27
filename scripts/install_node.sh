@@ -66,23 +66,42 @@ COREPACK_JS="$NODE_VERSION_DIR/lib/node_modules/corepack/dist/corepack.js"
 # reliably one-shot on the same mount: `rm -f` can report success (exit 0,
 # no stderr) while the entry is still visibly present on the very next
 # access, then clear on a retry with no other change — a readdir/stat cache
-# desync, not an rm bug (confirmed live on Mac.Home, 2026-09-27). Retry a
-# bounded number of times and fail loudly rather than silently leaving a
-# broken entry behind or looping forever.
+# desync, not an rm bug (confirmed live on Mac.Home, 2026-09-27).
+#
+# A first cut of this function retried the `rm` but trusted `[ -e "$link" ]`
+# to decide cleanup had worked before doing a single, unretried `ln -sf`.
+# That's the same desync fooling itself: live re-reproduction on Mac.Home
+# (2026-09-27, via `podman exec` into aw-remote-host-workspace) showed
+# `stat`/`[ -e ]` on the corrupted path returning ENOENT while `readdir`
+# still listed the dirent — so `-e` can report "already gone" while the
+# entry is still physically there, the loop exits believing cleanup
+# succeeded, and the final `ln -sf` then hits the still-corrupted path and
+# fails outright. The same live test found `ln -sf` itself failing
+# identically for 15+ continuous seconds before eventually clearing.
+#
+# Fix: never trust a presence check here. Retry the operation that actually
+# has to succeed (`ln -sf`) directly, inside the loop, and judge success by
+# ITS OWN exit code — not by whether `-e` thinks the old entry is gone.
+# Budget is time, not a guess: ~30s per link (60 attempts x 0.5s), comfortably
+# past the 15s+ stuck window observed live. Attempt count/interval are
+# overridable via env vars so tests can exercise the retry/give-up paths
+# without actually waiting 30s.
 nvm_bypass_relink() {
   local target="$1" link="$2" attempt
-  for attempt in 1 2 3 4 5; do
+  local max_attempts="${NVM_BYPASS_RELINK_ATTEMPTS:-60}"
+  local retry_sleep="${NVM_BYPASS_RELINK_SLEEP:-0.5}"
+  for attempt in $(seq 1 "$max_attempts"); do
     rm -f "$link" 2>/dev/null || true
-    [ -e "$link" ] || break
-    sleep 0.2
+    if [ ! -f "$target" ]; then
+      return 0
+    fi
+    if ln -sf "$target" "$link" 2>/dev/null; then
+      return 0
+    fi
+    sleep "$retry_sleep"
   done
-  if [ -e "$link" ]; then
-    echo "install_node.sh: $link is stuck and could not be removed after 5 attempts" >&2
-    exit 1
-  fi
-  if [ -f "$target" ]; then
-    ln -sf "$target" "$link"
-  fi
+  echo "install_node.sh: $link is stuck and could not be relinked after $max_attempts attempts" >&2
+  exit 1
 }
 
 # Apply the same npm/npx/corepack bypass used for /usr/local/bin below (real
