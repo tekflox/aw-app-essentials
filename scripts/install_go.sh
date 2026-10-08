@@ -8,7 +8,7 @@ set -euo pipefail
 
 GO_VERSION="${AW_APP_GO_VERSION:-latest}"
 GO_ROOT="${AW_GO_ROOT:-$HOME/.go}"
-AW_BIN_DIR="/usr/local/bin"
+AW_BIN_DIR="${AW_BIN_DIR:-/usr/local/bin}"
 
 case "$(uname -m)" in
   x86_64|amd64) ARCH="amd64" ;;

@@ -13,7 +13,7 @@
 set -euo pipefail
 
 BREW_DIR="${AW_HOMEBREW_DIR:-$HOME/.homebrew}"
-AW_BIN_DIR="/usr/local/bin"
+AW_BIN_DIR="${AW_BIN_DIR:-/usr/local/bin}"
 
 if ! command -v git >/dev/null 2>&1; then
   echo "install_brew.sh: git not found on this system — install git first (aw-app-git)" >&2

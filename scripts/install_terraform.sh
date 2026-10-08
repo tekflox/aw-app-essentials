@@ -14,7 +14,7 @@
 set -euo pipefail
 
 TF_VERSION="${AW_APP_TERRAFORM_VERSION:-1.9.8}"
-AW_BIN_DIR="/usr/local/bin"
+AW_BIN_DIR="${AW_BIN_DIR:-/usr/local/bin}"
 
 case "$(uname -m)" in
   x86_64|amd64) ARCH="amd64" ;;

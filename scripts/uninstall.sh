@@ -18,7 +18,7 @@ apt-get remove -y --purge telnet iputils-ping curl netcat-openbsd perl python-is
 apt-get autoremove -y || true
 apt-get update -qq || true
 
-AW_BIN_DIR="/usr/local/bin"
+AW_BIN_DIR="${AW_BIN_DIR:-/usr/local/bin}"
 
 # Terraform
 rm -f "$AW_BIN_DIR/terraform"

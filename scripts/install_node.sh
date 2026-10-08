@@ -15,7 +15,7 @@ set -euo pipefail
 
 NODE_VERSION="${AW_APP_NODE_VERSION:-lts}"
 export NVM_DIR="${NVM_DIR:-$HOME/.nvm}"
-AW_BIN_DIR="/usr/local/bin"
+AW_BIN_DIR="${AW_BIN_DIR:-/usr/local/bin}"
 
 if [ ! -s "$NVM_DIR/nvm.sh" ]; then
   echo "install_node.sh: nvm not found at $NVM_DIR — run install_nvm.sh first" >&2
