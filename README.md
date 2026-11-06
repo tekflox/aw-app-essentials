@@ -20,3 +20,5 @@ Install the app and let it prepare the tools. After installation, open a workspa
 ## What It Delivers
 
 The app gives AW Workspace a strong command-line foundation. Users and agents can work with common development and operations tools without manual setup each time.
+
+<!-- fleet migration B4: follow-up no-op to prove the comment + workflow_run merge paths -->
