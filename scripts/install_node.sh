@@ -151,8 +151,33 @@ if [ -f "$NPX_CLI" ]; then
 else
   sudo ln -sf "$NODE_BIN_DIR/npx" "$AW_BIN_DIR/npx"
 fi
+# Node's current LTS line (confirmed: v26.13.0) no longer bundles Corepack at
+# all — lib/node_modules/ only ships npm. An older install already on this
+# host (v24.18.1) does bundle it, confirming this is a real Node-side
+# removal, not a local artifact. Corepack is still published separately on
+# npm, so install it standalone with this node's own npm, targeting the same
+# --prefix as the bundled layout so $COREPACK_JS lands at the exact path the
+# rest of this script (and install_yarn.sh/install_pnpm.sh) already expect.
+#
+# Best-effort, never fatal to this script (same posture as nvm_bypass_relink
+# above): essentials_app's activate() runs one install_system_cli() call per
+# manifest CLI with no per-CLI exception handling, so a non-zero exit HERE
+# would abort the whole essentials app's activation — not just yarn/pnpm,
+# but node/npm/npx and everything after them (docker/go/terraform/brew) too,
+# even though node/npm/npx already landed correctly a few lines up. A
+# transient failure of this npm call (flaky registry, a stale
+# npm-cache-owner EACCES) must not take the whole app down. The actual
+# enforcement for whoever needs corepack stays where it already correctly
+# lives: install_yarn.sh/install_pnpm.sh's own `command -v corepack` guard,
+# which only fires for the CLIs that actually depend on it.
+if [ ! -f "$COREPACK_JS" ]; then
+  echo "install_node.sh: corepack not bundled with $NODE_VERSION_DIR — installing it standalone via npm" >&2
+  "$NODE_BIN_DIR/node" "$NPM_CLI" install --global corepack --prefix "$NODE_VERSION_DIR" >/dev/null || true
+fi
 if [ -f "$COREPACK_JS" ]; then
   sudo ln -sf "$COREPACK_JS" "$AW_BIN_DIR/corepack"
+else
+  echo "install_node.sh: corepack still unavailable after the standalone npm install attempt — node/npm/npx remain usable; install_yarn.sh/install_pnpm.sh will fail loud on their own corepack guard if yarn/pnpm are actually requested" >&2
 fi
 
 "$AW_BIN_DIR/node" --version

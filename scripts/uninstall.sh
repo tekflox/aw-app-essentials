@@ -27,8 +27,8 @@ rm -f "$AW_BIN_DIR/terraform"
 rm -f "$AW_BIN_DIR"/{go,gofmt}
 rm -rf "${AW_GO_ROOT:-$HOME/.go}"
 
-# Node.js toolkit (nvm/node/npm/npx/yarn/pnpm)
-rm -f "$AW_BIN_DIR"/{node,npm,npx,yarn,yarnpkg,pnpm,pnpx}
+# Node.js toolkit (nvm/node/npm/npx/corepack/yarn/pnpm)
+rm -f "$AW_BIN_DIR"/{node,npm,npx,corepack,yarn,yarnpkg,pnpm,pnpx}
 rm -rf "${NVM_DIR:-$HOME/.nvm}"
 for rc in "$HOME/.bashrc" "$HOME/.zshrc" "$HOME/.profile"; do
   [ -f "$rc" ] && sed -i '/NVM_DIR/d' "$rc" || true
