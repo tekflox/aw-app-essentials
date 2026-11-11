@@ -62,6 +62,22 @@ NPM_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npm-cli.js"
 NPX_CLI="$NODE_VERSION_DIR/lib/node_modules/npm/bin/npx-cli.js"
 COREPACK_JS="$NODE_VERSION_DIR/lib/node_modules/corepack/dist/corepack.js"
 
+# Node's current LTS line (confirmed: v26.13.0) no longer bundles Corepack at
+# all — lib/node_modules/ only ships npm. An older install already on this
+# host (v24.18.1) does bundle it, confirming this is a real Node-side
+# removal, not a local artifact. Corepack is still published separately on
+# npm, so install it standalone with this node's own npm, targeting the same
+# --prefix as the bundled layout so $COREPACK_JS lands at the exact path the
+# rest of this script (and install_yarn.sh/install_pnpm.sh) already expect.
+if [ ! -f "$COREPACK_JS" ]; then
+  echo "install_node.sh: corepack not bundled with $NODE_VERSION_DIR — installing it standalone via npm" >&2
+  "$NODE_BIN_DIR/node" "$NPM_CLI" install --global corepack --prefix "$NODE_VERSION_DIR" >/dev/null
+fi
+if [ ! -f "$COREPACK_JS" ]; then
+  echo "install_node.sh: corepack still missing at $COREPACK_JS after the standalone npm install — aborting so downstream yarn/pnpm steps don't run against a broken corepack" >&2
+  exit 1
+fi
+
 # Removing one of the corrupted bin/{npm,npx,corepack} entries above is not
 # reliably one-shot on the same mount: `rm -f` can report success (exit 0,
 # no stderr) while the entry is still visibly present on the very next
