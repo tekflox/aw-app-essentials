@@ -158,19 +158,26 @@ fi
 # npm, so install it standalone with this node's own npm, targeting the same
 # --prefix as the bundled layout so $COREPACK_JS lands at the exact path the
 # rest of this script (and install_yarn.sh/install_pnpm.sh) already expect.
-# Deliberately AFTER node/npm/npx are already symlinked above: a transient
-# failure of this npm install call (flaky registry, a stale npm-cache-owner
-# EACCES) must not take down node/npm/npx provisioning, which nvm already
-# proved works (line 55) independently of corepack ever landing.
+#
+# Best-effort, never fatal to this script (same posture as nvm_bypass_relink
+# above): essentials_app's activate() runs one install_system_cli() call per
+# manifest CLI with no per-CLI exception handling, so a non-zero exit HERE
+# would abort the whole essentials app's activation — not just yarn/pnpm,
+# but node/npm/npx and everything after them (docker/go/terraform/brew) too,
+# even though node/npm/npx already landed correctly a few lines up. A
+# transient failure of this npm call (flaky registry, a stale
+# npm-cache-owner EACCES) must not take the whole app down. The actual
+# enforcement for whoever needs corepack stays where it already correctly
+# lives: install_yarn.sh/install_pnpm.sh's own `command -v corepack` guard,
+# which only fires for the CLIs that actually depend on it.
 if [ ! -f "$COREPACK_JS" ]; then
   echo "install_node.sh: corepack not bundled with $NODE_VERSION_DIR — installing it standalone via npm" >&2
-  "$NODE_BIN_DIR/node" "$NPM_CLI" install --global corepack --prefix "$NODE_VERSION_DIR" >/dev/null
+  "$NODE_BIN_DIR/node" "$NPM_CLI" install --global corepack --prefix "$NODE_VERSION_DIR" >/dev/null || true
 fi
 if [ -f "$COREPACK_JS" ]; then
   sudo ln -sf "$COREPACK_JS" "$AW_BIN_DIR/corepack"
 else
-  echo "install_node.sh: corepack still missing at $COREPACK_JS after the standalone npm install — aborting so downstream yarn/pnpm steps don't run against a broken corepack" >&2
-  exit 1
+  echo "install_node.sh: corepack still unavailable after the standalone npm install attempt — node/npm/npx remain usable; install_yarn.sh/install_pnpm.sh will fail loud on their own corepack guard if yarn/pnpm are actually requested" >&2
 fi
 
 "$AW_BIN_DIR/node" --version
