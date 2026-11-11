@@ -170,9 +170,16 @@ fi
 # enforcement for whoever needs corepack stays where it already correctly
 # lives: install_yarn.sh/install_pnpm.sh's own `command -v corepack` guard,
 # which only fires for the CLIs that actually depend on it.
+#
+# --cache points this npm call at a throwaway dir instead of the shared
+# ~/.npm cache: a pre-existing, unrelated root-owned-file corruption in that
+# shared cache made npm fail with EACCES here even after the fallback above
+# landed (confirmed live on fredericowu's workspace, 2026-11-11).
 if [ ! -f "$COREPACK_JS" ]; then
   echo "install_node.sh: corepack not bundled with $NODE_VERSION_DIR — installing it standalone via npm" >&2
-  "$NODE_BIN_DIR/node" "$NPM_CLI" install --global corepack --prefix "$NODE_VERSION_DIR" >/dev/null || true
+  corepack_scratch_cache="$(mktemp -d)"
+  "$NODE_BIN_DIR/node" "$NPM_CLI" install --global corepack --prefix "$NODE_VERSION_DIR" --cache "$corepack_scratch_cache" >/dev/null || true
+  rm -rf "$corepack_scratch_cache"
 fi
 if [ -f "$COREPACK_JS" ]; then
   sudo ln -sf "$COREPACK_JS" "$AW_BIN_DIR/corepack"
